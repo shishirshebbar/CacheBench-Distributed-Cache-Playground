@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter_redis:9121']
+
+  - job_name: 'keydb'
+    static_configs:
+      - targets: ['redis_exporter_keydb:9121']
+
+  - job_name: 'bench'
+    static_configs:
+      - targets: ['bench:9400']

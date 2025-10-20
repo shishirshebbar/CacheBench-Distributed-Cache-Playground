@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--save", "\"\"", "--appendonly", "no"]
+    ports:
+      - "${REDIS_PORT:-6381}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  keydb_playground:
+    image: eqalpha/keydb:latest
+    container_name: keydb_playground
+    command: ["keydb-server", "/etc/keydb/keydb.conf"]
+    ports:
+      - "${KEYDB_PORT:-6380}:6379"
+    volumes:
+      - ./keydb.conf:/etc/keydb/keydb.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6379", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis_exporter_redis:
+    image: oliver006/redis_exporter:latest
+    container_name: redis_exporter_redis
+    command:
+      - '--redis.addr=redis:6379'
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+
+  redis_exporter_keydb:
+    image: oliver006/redis_exporter:latest
+    container_name: redis_exporter_keydb
+    command:
+      - '--redis.addr=keydb_playground:6379'
+    ports:
+      - "9122:9121"
+    depends_on:
+      - keydb_playground
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      - redis_exporter_redis
+      - redis_exporter_keydb
+      - bench
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+  bench:
+    build: ./benchmark
+    container_name: bench
+    env_file: .env
+    volumes:
+      - ./benchmark:/usr/src/app
+    depends_on:
+      - redis
+      - keydb_playground
+    ports:
+      - "${BENCH_PORT:-9400}:9400"
+
+networks:
+  default:
+    driver: bridge
