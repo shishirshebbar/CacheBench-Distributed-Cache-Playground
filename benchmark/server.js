@@ -45,5 +45,9 @@ app.post('/run/ttl', async (req, res) => {
   res.json({ status: 'started', target, duration, rate, ttl });
 });
 
+app.get('/healthz', (_req, res) => {
+  res.status(200).type('text/plain').send('ok\n');
+});
+
 const port = 9400;
-app.listen(port, () => console.log(`Bench server listening on :${port}`));
+app.listen(port, '0.0.0.0', () => console.log(`Bench server listening on :${port}`));

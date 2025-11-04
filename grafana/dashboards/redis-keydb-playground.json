@@ -1,0 +1,104 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type":"grafana","id":"grafana","name":"Grafana","version":"10.x"},
+    {"type":"panel","id":"timeseries","name":"Time series","version":"10.x"},
+    {"type":"datasource","id":"prometheus","name":"Prometheus","version":"2.x"}
+  ],
+  "uid": "redis-keydb-playground",
+  "title": "Redis vs KeyDB — Playground",
+  "timezone": "",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Pub/Sub published (rps) by target",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(bench_pubsub_published_total[1m]) by (target)",
+          "legendFormat": "{{target}}",
+          "datasource": {"type":"prometheus","uid":"Prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Pub/Sub received (rps) by target",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(bench_pubsub_received_total[1m]) by (target)",
+          "legendFormat": "{{target}}",
+          "datasource": {"type":"prometheus","uid":"Prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "TTL sets (rps) by target",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "rate(bench_ttl_sets_total[1m]) by (target)",
+          "legendFormat": "{{target}}",
+          "datasource": {"type":"prometheus","uid":"Prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Server commands processed (rps) by instance",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "rate(redis_commands_processed_total[1m]) by (instance)",
+          "legendFormat": "{{instance}}",
+          "datasource": {"type":"prometheus","uid":"Prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory used (bytes) by instance",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "targets": [
+        {
+          "expr": "redis_memory_used_bytes",
+          "legendFormat": "{{instance}}",
+          "datasource": {"type":"prometheus","uid":"Prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Current pub/sub receive rps (KeyDB vs Redis)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "targets": [
+        {
+          "expr": "sum by (target) (rate(bench_pubsub_received_total[1m]))",
+          "legendFormat": "{{target}}",
+          "datasource": {"type":"prometheus","uid":"Prometheus"}
+        }
+      ],
+      "options": {"reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false}}
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "label": "Instance",
+        "datasource": {"type":"prometheus","uid":"Prometheus"},
+        "query": "label_values(redis_memory_used_bytes, instance)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "time": {"from": "now-15m", "to": "now"}
+}

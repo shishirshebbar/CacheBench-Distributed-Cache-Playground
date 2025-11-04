@@ -79,6 +79,7 @@ services:
     env_file: .env
     volumes:
       - ./benchmark:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - redis
       - keydb_playground
